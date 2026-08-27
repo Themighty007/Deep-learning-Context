@@ -1,0 +1,230 @@
+# RAMTSR — Training & Model Configuration
+# SIH26142: Satellite Super Resolution
+
+# ==========================================
+# Model Architecture
+# ==========================================
+model:
+  name: "ramtsr"
+  backbone: "swinir_medium"
+  
+  # SwinIR-Medium config
+  swinir:
+    img_size: 128
+    patch_size: 1
+    in_chans: 4                    # B2, B3, B4, B8 (10m bands)
+    embed_dim: 180
+    depths: [6, 6, 6, 6, 6, 6]    # 6 RSTB blocks
+    num_heads: [6, 6, 6, 6, 6, 6]
+    window_size: 8
+    mlp_ratio: 2.0
+    upscale: 4                     # 10m → 2.5m
+    img_range: 1.0
+    upsampler: "pixelshuffle"
+    resi_connection: "1conv"
+    use_checkpoint: true           # Gradient checkpointing
+
+  # Temporal attention
+  temporal:
+    num_frames: 5
+    attention_type: "quality_aware"  # Uses cloud mask + quality score
+    dropout: 0.1
+
+  # GAN discriminator (Phase 3+)
+  discriminator:
+    type: "patch_gan"
+    in_channels: 4
+    ndf: 64
+    n_layers: 3
+
+  # Uncertainty head
+  uncertainty:
+    method: "mc_dropout"
+    dropout_rate: 0.1
+    num_forward_passes: 10         # During inference
+    # Alternative: ensemble of 3 models with different seeds
+
+# ==========================================
+# Loss Function (Progressive)
+# ==========================================
+loss:
+  # Phase 1: Core
+  reconstruction:
+    type: "l1"
+    weight: 1.0
+
+  # Phase 1: Spectral consistency
+  spectral:
+    type: "sam"                    # Spectral Angle Mapper
+    weight: 0.5
+
+  # Phase 2: Anti-hallucination
+  observation_consistency:
+    type: "l1"
+    weight: 0.3
+    degradation_model:
+      psf_sigma: 1.5              # Sentinel-2 MTF approximation
+      downsample_factor: 4
+
+  # Phase 3: Perceptual + GAN
+  perceptual:
+    type: "vgg"
+    layers: ["relu1_2", "relu2_2", "relu3_4"]
+    weight: 0.1
+
+  adversarial:
+    type: "vanilla"               # Binary cross-entropy
+    weight: 0.01
+
+  # Phase 4: Uncertainty
+  uncertainty:
+    type: "nll"                   # Negative log-likelihood
+    weight: 0.1
+
+# ==========================================
+# Training
+# ==========================================
+training:
+  # GPU settings (RTX 4090 / Cloud GPU)
+  gpu_ids: [0]
+  num_workers: 8
+  pin_memory: true
+  
+  # Batch & patches
+  batch_size: 8                   # RTX 4090: 8-16; A100: 16-32
+  patch_size: 128                 # Input patch size (10m)
+  target_patch_size: 512          # Output patch size (2.5m)
+  
+  # Optimizer
+  optimizer:
+    type: "adamw"
+    lr: 2.0e-4
+    betas: [0.9, 0.999]
+    weight_decay: 0.01
+  
+  # Scheduler
+  scheduler:
+    type: "cosine_annealing"
+    T_max: 200000
+    eta_min: 1.0e-6
+  
+  # Training phases
+  phase_1:
+    name: "core"
+    iterations: 100000
+    losses: ["reconstruction", "spectral"]
+  
+  phase_2:
+    name: "obs_consistency"
+    iterations: 50000
+    losses: ["reconstruction", "spectral", "observation_consistency"]
+    resume_from: "phase_1_best.pth"
+  
+  phase_3:
+    name: "gan"
+    iterations: 50000
+    losses: ["reconstruction", "spectral", "observation_consistency", "perceptual", "adversarial"]
+    resume_from: "phase_2_best.pth"
+  
+  phase_4:
+    name: "uncertainty"
+    iterations: 30000
+    losses: ["reconstruction", "spectral", "observation_consistency", "perceptual", "adversarial", "uncertainty"]
+    resume_from: "phase_3_best.pth"
+  
+  # Mixed precision
+  use_amp: true
+  
+  # Logging
+  log_interval: 100
+  save_interval: 5000
+  val_interval: 5000
+  
+  # Total: ~230K iterations ≈ 20-30 GPU hours on RTX 4090
+
+# ==========================================
+# Data
+# ==========================================
+data:
+  # Primary training data
+  train:
+    - name: "worldstrat"
+      root: "data/worldstrat/"
+      type: "paired_temporal"     # HR SPOT + 16× Sentinel-2 temporal
+      hr_resolution: 1.5          # meters
+      lr_resolution: 10.0         # meters
+      
+    - name: "sen2naip"
+      root: "data/sen2naip/"
+      type: "paired_crosssensor"  # HR NAIP + Sentinel-2
+      hr_resolution: 1.0          # meters (NAIP)
+      lr_resolution: 10.0         # meters
+  
+  # Validation
+  val:
+    - name: "sen2venus"
+      root: "data/sen2venus/"
+      type: "paired_crosssensor"
+      hr_resolution: 5.0          # meters (VENµS)
+      lr_resolution: 10.0         # meters
+  
+  # Benchmark
+  test:
+    - name: "opensr_test"
+      root: "data/opensr_test/"
+      type: "benchmark"
+      metrics: ["consistency", "synthesis", "correctness", "hallucination"]
+  
+  # Demo (India)
+  demo:
+    source: "copernicus"           # browser.dataspace.copernicus.eu
+    locations:
+      - name: "mumbai"
+        bbox: [72.7, 18.85, 73.1, 19.25]
+      - name: "delhi"
+        bbox: [76.9, 28.4, 77.4, 28.8]
+      - name: "punjab_agriculture"
+        bbox: [75.0, 30.5, 75.5, 31.0]
+      - name: "chennai"
+        bbox: [80.1, 12.9, 80.4, 13.2]
+      - name: "himalayas"
+        bbox: [78.0, 30.5, 78.5, 31.0]
+      - name: "western_ghats"
+        bbox: [75.5, 11.5, 76.0, 12.0]
+
+  # Augmentation
+  augmentation:
+    random_flip: true
+    random_rotation: [0, 90, 180, 270]
+    random_crop: true
+    spectral_jitter: 0.02         # ±2% reflectance noise
+
+# ==========================================
+# Evaluation Metrics
+# ==========================================
+evaluation:
+  metrics:
+    - psnr                         # Peak Signal-to-Noise Ratio
+    - ssim                         # Structural Similarity
+    - sam                          # Spectral Angle Mapper
+    - lpips                        # Perceptual distance
+  
+  opensr_metrics:
+    - consistency                  # Reflectance preservation
+    - synthesis                    # HR feature quality
+    - correctness                  # Hallucination detection
+    - spectral_distance            # Cross-band fidelity
+  
+  uncertainty_calibration:
+    bins: 10                       # Percentile bins
+    plot: true                     # Generate calibration curve
+
+# ==========================================
+# Inference
+# ==========================================
+inference:
+  tile_size: 512                   # Process large images in tiles
+  tile_overlap: 32                 # Overlap for seamless blending
+  output_format: "geotiff"         # Preserve CRS + affine + bands
+  export_onnx: true                # For fast local inference
+  batch_inference: false           # Process one tile at a time (safer)

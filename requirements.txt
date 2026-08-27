@@ -1,0 +1,61 @@
+# ==========================================
+# RAMTSR — Dependencies
+# ==========================================
+
+# Core ML
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+einops>=0.7.0
+timm>=0.9.12
+
+# Geospatial
+rasterio>=1.3.9
+gdal>=3.4.0
+pyproj>=3.6.0
+shapely>=2.0.0
+geopandas>=0.14.0
+
+# Sentinel-2 / Copernicus
+sentinelhub>=3.10.0
+s2cloudless>=1.7.0
+
+# Image processing
+opencv-python>=4.8.0
+scikit-image>=0.22.0
+Pillow>=10.0.0
+
+# Super Resolution tooling
+basicsr>=1.4.2
+
+# Evaluation
+opensr-test>=1.0.0
+
+# Data loading
+h5py>=3.10.0
+zarr>=2.16.0
+xarray>=2023.10.0
+
+# API & Web
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Experiment tracking
+wandb>=0.16.0
+
+# Utilities
+tqdm>=4.66.0
+pyyaml>=6.0.1
+numpy>=1.24.0
+pandas>=2.1.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# ONNX export (inference optimization)
+onnx>=1.15.0
+onnxruntime>=1.16.0
