@@ -50,3 +50,14 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# --- Website ---
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example

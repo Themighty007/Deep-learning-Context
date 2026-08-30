@@ -1,0 +1,6 @@
+{
+  "name": "RAMTSR — Reliability-Aware Multi-Temporal Super Resolution",
+  "description": "Physics-constrained satellite image super-resolution with calibrated uncertainty for Sentinel-2 Earth observation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

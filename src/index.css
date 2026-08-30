@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --void: #050505;
+    --black: #080808;
+    --white: #FFFFFF;
+    --paper: #F7F8F5;
+    --paper-2: #EEF1ED;
+    --cyan: #00F0FF;
+    --cyan-deep: #00B8D4;
+    --violet: #6D35FF;
+    --violet-dark: #32136F;
+    --lime: #B7F000;
+    --lime-bright: #D5FF00;
+    --blue: #2D7DFF;
+    --safe-green: #22C55E;
+    --warning-yellow: #FACC15;
+    --alert-red: #FF334F;
+    --ink: #080808;
+    --muted: #687078;
+    --line: #D9DEDA;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--void);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  code, pre, .font-mono, .mono-data {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+}
+
+/* Custom Scientific Grid */
+.scientific-grid-dark {
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.scientific-grid-light {
+  background-image: 
+    linear-gradient(to right, rgba(8, 8, 8, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(8, 8, 8, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.subtle-dot-grid {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080808;
+}
+::-webkit-scrollbar-thumb {
+  background: #252525;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00F0FF;
+}
+
+/* Subtle glow utilities */
+.glow-cyan {
+  box-shadow: 0 0 24px -4px rgba(0, 240, 255, 0.45);
+}
+.glow-lime {
+  box-shadow: 0 0 24px -4px rgba(183, 240, 0, 0.45);
+}
+.glow-violet {
+  box-shadow: 0 0 24px -4px rgba(109, 53, 255, 0.45);
+}
+.glow-red {
+  box-shadow: 0 0 24px -4px rgba(255, 51, 79, 0.45);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+}
+
+/* Scanline animation */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(1000%);
+  }
+}
+
+.animate-scanline {
+  animation: scanline 6s linear infinite;
+}
+
+/* Pulse radar */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar {
+  animation: radar-sweep 4s linear infinite;
+}
